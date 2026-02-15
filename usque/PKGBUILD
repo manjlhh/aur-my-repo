@@ -1,0 +1,20 @@
+# Maintainer: ftk
+
+_pkgname='usque'
+pkgname="${_pkgname}"
+pkgver=4.2.1
+pkgrel=1.1
+pkgdesc="Open-source reimplementation of the Cloudflare WARP client's MASQUE protocol"
+arch=('x86_64')
+url="https://github.com/Diniboy1123/usque"
+license=('MIT')
+depends=()
+provides=(${_pkgname} ${_pkgname})
+conflicts=(${_pkgname} ${_pkgname})
+source_x86_64=("${url}/releases/download/v${pkgver}/${_pkgname}_${pkgver}_linux_amd64.zip")
+sha256sums_x86_64=('4117e20695078af9c11edecd1a826c009bbc7ea0b7f64458612b4198910bc313')
+
+
+package() {
+    install -Dm755 "$srcdir/${_pkgname}" "$pkgdir/usr/bin/${_pkgname}"
+}
