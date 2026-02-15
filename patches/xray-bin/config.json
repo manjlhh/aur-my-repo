@@ -1,0 +1,50 @@
+{
+  "log": {
+    "loglevel": "none"
+  },
+  "dns": {
+    "queryStrategy": "UseIPv4",
+    "disableFallback": true,
+    "disableFallbackIfMatch": true,
+    "serveStale": true,
+    "servers": [
+      "77.88.8.8",
+      "77.88.8.1",
+      "1.1.1.1",
+      "8.8.8.8",
+      {
+        "address": "https://1.1.1.1/dns-query",
+        "domains": [
+          "domain:rutracker.org"
+        ]
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "dns-in",
+      "protocol": "dokodemo-door",
+      "port": 53,
+      "listen": "127.0.0.1",
+      "settings": {
+        "network": "udp,tcp",
+        "followRedirect": false
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "dns-out",
+      "protocol": "dns"
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "type": "field",
+        "inboundTag": "dns-in",
+        "outboundTag": "dns-out"
+      }
+    ]
+  }
+}

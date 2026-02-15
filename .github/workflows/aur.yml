@@ -1,0 +1,95 @@
+name: AUR
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'The reason for running the workflow manually'
+        required: true
+        default: 'Manual run via UI'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    permissions:
+      contents: write
+    steps:
+    - name: Update system and install dependencies
+      run: |
+        sed -i "/^OPTIONS=/ s/[^!]debug/ !debug/" /etc/makepkg.conf
+        sed -i "s/^COMPRESSXZ=.*/COMPRESSXZ=(xz -e -c -z - --threads=0)/" /etc/makepkg.conf
+        sed -i "s/^PKGEXT=.*/PKGEXT='.pkg.tar.xz'/" /etc/makepkg.conf
+        pacman -Syu --noconfirm
+        pacman -S xz git base-devel github-cli --noconfirm
+    - name: Create non-root user for building
+      run: |
+        useradd -m builder
+        echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+        echo "root ALL=(ALL:ALL) ALL" >> /etc/sudoers
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - name: Fix dubious ownership
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+    - name: Change ownership of the build directory
+      run: |
+        mkdir repo
+        chown -R builder:builder .
+    - name: BUILD X-RAY
+      run: |
+        groupadd -r xray
+        checksum=$(sha256sum xray-bin/config.json | awk '{ printf $1 }')
+        new_checksum=$(sha256sum patches/xray-bin/config.json | awk '{ printf $1 }')
+        cp patches/xray-bin/config.json xray-bin/config.json
+        cd xray-bin
+        sed -i "s/${checksum}/${new_checksum}/" PKGBUILD
+        sed -i "/^pkgrel=/ s/$/.1/" PKGBUILD
+        sed -i "s/install -Dm644 config.json/install -Dm664 -g xray config.json/" PKGBUILD
+        sudo -u builder makepkg -rcCfs  --noconfirm
+        mv *.pkg.tar.xz ../repo/
+    - name: BUILD YAY-BIN
+      run: |
+        cd yay-bin
+        sed -i "/^pkgrel=/ s/$/.1/" PKGBUILD
+        sudo -u builder makepkg -rcCfs  --noconfirm
+        mv *.pkg.tar.xz ../repo/
+    - name: BUILD DOTTER-RS-BIN
+      run: |
+        cd dotter-rs-bin
+        sed -i "/^pkgrel=/ s/$/.1/" PKGBUILD
+        sudo -u builder makepkg -rcCfs  --noconfirm
+        mv *.pkg.tar.xz ../repo/
+    - name: BUILD VIAL-APPIMAGE
+      run: |
+        cd vial-appimage
+        sed -i "/^pkgrel=/ s/$/.1/" PKGBUILD
+        sudo -u builder makepkg -rcCfs  --noconfirm
+        mv *.pkg.tar.xz ../repo/
+    - name: BUILD YANDEX-BROWSER
+      run: |
+        cd yandex-browser
+        sed -i "/^pkgrel=/ s/$/.1/" PKGBUILD
+        sudo -u builder makepkg -rcCfs  --noconfirm
+        mv *.pkg.tar.xz ../repo/
+    - name: Delete release and tag
+      run: gh release delete v1 --cleanup-tag -y || echo "release not found"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create repo
+      run: |
+        cd repo
+        repo-add ./my.db.tar.xz ./*.pkg.tar.xz
+    - name: Publish
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "repo/*"
+        removeArtifacts: true
+        tag: "v1"
+        makeLatest: true

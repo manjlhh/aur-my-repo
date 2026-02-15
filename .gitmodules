@@ -1,0 +1,15 @@
+[submodule "xray-bin"]
+	path = xray-bin
+	url = https://aur.archlinux.org/xray-bin.git
+[submodule "dotter-rs-bin"]
+	path = dotter-rs-bin
+	url = https://aur.archlinux.org/dotter-rs-bin.git
+[submodule "yay-bin"]
+	path = yay-bin
+	url = https://aur.archlinux.org/yay-bin.git
+[submodule "vial-appimage"]
+	path = vial-appimage
+	url = https://aur.archlinux.org/vial-appimage.git
+[submodule "yandex-browser"]
+	path = yandex-browser
+	url = https://aur.archlinux.org/yandex-browser.git
