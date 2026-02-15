@@ -1,0 +1,5 @@
+post_install() {
+  chmod 0664 /opt/zapret2/config
+  chgrp zapret2 /opt/zapret2/config
+  chgrp -R zapret2 /opt/zapret2/files/fake
+}

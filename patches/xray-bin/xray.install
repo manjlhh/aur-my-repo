@@ -1,0 +1,4 @@
+post_install() {
+  chmod 0664 /etc/xray/config.json
+  chgrp xray /etc/xray/config.json
+}
