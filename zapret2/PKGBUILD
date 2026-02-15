@@ -1,0 +1,48 @@
+pkgname=zapret2
+pkgver=0.9.4.7
+pkgrel=1.1
+pkgdesc="Anti-DPI software"
+arch=('x86_64')
+url="https://github.com/bol-van/$pkgname"
+license=('MIT')
+depends=(
+  'luajit'
+  'libnetfilter_queue'
+)
+makedepends=('git')
+provides=($pkgname)
+source=($pkgname::git+$url.git#tag=v$pkgver)
+sha256sums=('16a46c0972a01a1ee807bc54dab282ae1b1ed92f84c4dff2db150aa162501e22')
+
+prepare() {
+  sed -i '/^\[Service\]/ s|$|\nEnvironmentFile=-/tmp/zapret2/envvars|' "$srcdir"/$pkgname/init.d/systemd/zapret2.service
+}
+
+build() {
+  cd $pkgname
+  make
+}
+
+package() {
+  install -Dm644 /dev/stdin "$pkgdir"/usr/lib/sysusers.d/$pkgname.conf << END
+u $pkgname - "$pkgname ${pkgdesc,}"
+END
+  install -Dm644 /dev/stdin "$pkgdir"/usr/lib/tmpfiles.d/$pkgname.conf << END
+f /opt/$pkgname/config 0664 root $pkgname
+d /opt/$pkgname/files/fake 0674 root $pkgname
+END
+
+  cd $pkgname
+
+  install -Dm755 ipset/*  -t "$pkgdir"/opt/$pkgname/ipset/
+  install -Dm644 common/* -t "$pkgdir"/opt/$pkgname/common/
+  install -Dm644 lua/*    -t "$pkgdir"/opt/$pkgname/lua/
+  mkdir -p -m 674 "$pkgdir"/opt/$pkgname/files/fake
+
+  install -Dm755 init.d/sysv/{functions,$pkgname} -t "$pkgdir"/opt/$pkgname/init.d/sysv/
+  install -Dm644 init.d/systemd/zapret2.service -t "$pkgdir"/usr/lib/systemd/system/
+
+  install -Dm664 config.default -T "$pkgdir"/opt/$pkgname/config
+
+  install -Dm755 binaries/my/nfqws2 -T "$pkgdir"/opt/$pkgname/nfq2/nfqws2
+}
